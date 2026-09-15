@@ -1,0 +1,656 @@
+@import 'tailwindcss';
+
+/* Class-based dark mode (we toggle `.dark` on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   Nemetrix — twilight-editorial design tokens
+
+   The palette is SEMANTIC, not literal: `ink` means "heading colour",
+   `paper` means "card surface", `ash` means "page canvas". That lets both
+   themes share one set of utility classes — only the values below flip.
+   ============================================================ */
+:root {
+  --c-signal: #007aff;
+  --c-ink: #000000; /* headings, strongest text */
+  --c-graphite: #3e3e3e; /* body copy */
+  --c-smoke: #636363; /* muted / metadata */
+  --c-paper: #ffffff; /* card surface */
+  --c-ash: #f7f7f7; /* page canvas + glow rings */
+  --c-line: rgba(0, 0, 0, 0.07); /* hairline borders */
+  --c-line-strong: rgba(0, 0, 0, 0.12);
+
+  /* Hero: dusk. Sky-blue through violet into a warm coral horizon. */
+  --hero-sky: linear-gradient(180deg, #4a7ff2 0%, #7b7ed8 30%, #c98ab5 65%, #e8a87c 100%);
+  --hero-deepen: linear-gradient(
+    180deg,
+    rgba(16, 22, 58, 0.55) 0%,
+    rgba(24, 34, 86, 0.28) 38%,
+    transparent 100%
+  );
+  --hero-haze: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(232, 168, 124, 0.25) 45%,
+    rgba(40, 32, 54, 0.45) 100%
+  );
+  --hero-ridge-far: rgba(46, 38, 64, 0.42);
+  --hero-ridge-near: rgba(24, 19, 36, 0.66);
+  --hero-star: #eaf4ff;
+  --hero-star-boost: 1;
+}
+
+.dark {
+  --c-signal: #4d9fff; /* lifted so it still reads as "on" against a dark canvas */
+  --c-ink: #f2f4f8;
+  --c-graphite: #c2c7d0;
+  --c-smoke: #8a919e;
+  --c-paper: #15171d; /* card surface sits ABOVE the canvas */
+  --c-ash: #0c0e12; /* page canvas */
+  --c-line: rgba(255, 255, 255, 0.09);
+  --c-line-strong: rgba(255, 255, 255, 0.16);
+
+  /* Hero: night. Same composition, three hours later — the horizon keeps a
+     dim ember so the gradient still resolves warm at the bottom edge. */
+  --hero-sky: linear-gradient(180deg, #05070f 0%, #0d1430 26%, #221c46 54%, #3d2a4d 78%, #6d3f42 100%);
+  --hero-deepen: linear-gradient(
+    180deg,
+    rgba(2, 4, 12, 0.72) 0%,
+    rgba(6, 10, 28, 0.32) 42%,
+    transparent 100%
+  );
+  --hero-haze: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(150, 84, 72, 0.22) 45%,
+    rgba(4, 4, 10, 0.65) 100%
+  );
+  --hero-ridge-far: rgba(8, 8, 18, 0.66);
+  --hero-ridge-near: rgba(2, 2, 6, 0.88);
+  --hero-star: #ffffff;
+  --hero-star-boost: 1.45; /* night sky earns brighter stars */
+}
+
+@theme inline {
+  --color-signal: var(--c-signal);
+  --color-ink: var(--c-ink);
+  --color-graphite: var(--c-graphite);
+  --color-smoke: var(--c-smoke);
+  --color-paper: var(--c-paper);
+  --color-ash: var(--c-ash);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces', 'Playfair Display', 'DM Serif Display', Georgia, serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+  .dark html,
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--c-ash);
+    color: var(--c-graphite);
+    font-family: var(--font-sans);
+    letter-spacing: -0.02em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    transition:
+      background-color 0.35s ease,
+      color 0.35s ease;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--c-signal) 24%, transparent);
+    color: var(--c-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-signal);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* ---- Lenis smooth scroll (required rules) ---- */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .meteor {
+      display: none;
+    }
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1;
+    font-optical-sizing: auto;
+  }
+
+  /* ---- Elevation: glow ring + hairline. Never drop shadows. ----
+     In dark the ring inverts into a faint light halo instead of a pale one. */
+  .glow-ring {
+    box-shadow: 0 0 0 5px var(--c-ash);
+    border: 1px solid var(--c-line);
+    background: var(--c-paper);
+  }
+  .glow-ring-strong {
+    box-shadow:
+      0 0 0 6px var(--c-ash),
+      0 1px 2px rgb(0 0 0 / 0.04);
+    border: 1px solid var(--c-line);
+    background: var(--c-paper);
+  }
+  .dark .glow-ring-strong {
+    box-shadow:
+      0 0 0 6px var(--c-ash),
+      0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
+  }
+
+  /* ---- Buttons: full pills, always. ---- */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+    cursor: pointer;
+  }
+  .pill-primary {
+    background: var(--c-signal);
+    color: #fff;
+    border: none;
+  }
+  .dark .pill-primary {
+    color: #06121f;
+  }
+  .pill-primary:hover {
+    background: color-mix(in srgb, var(--c-signal) 88%, #000);
+  }
+  .dark .pill-primary:hover {
+    background: color-mix(in srgb, var(--c-signal) 85%, #fff);
+  }
+  .pill-ghost {
+    background: transparent;
+    color: var(--c-ink);
+    border: 1.5px solid var(--c-ink);
+  }
+  .pill-ghost:hover {
+    background: color-mix(in srgb, var(--c-ink) 6%, transparent);
+  }
+  .pill-sm {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  /* ---- Slide-text pill: the label rolls up, a second one rolls in ---- */
+  .pill-slide__viewport {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+  }
+  .pill-slide__stack {
+    display: block;
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .pill:hover .pill-slide__stack,
+  .pill:focus-visible .pill-slide__stack {
+    transform: translateY(-50%);
+  }
+  .pill-slide__line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 1.2em;
+    line-height: 1.2em;
+  }
+
+  /* ---- Hero sky ---- */
+  .hero-gradient {
+    background: var(--hero-sky);
+    transition: background 0.5s ease;
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* Meteors: a tapered streak. The 61deg rotation matches the translate
+     vector below, so the tail always trails its own head. */
+  .meteor {
+    position: absolute;
+    width: 150px;
+    height: 1.5px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(214, 238, 255, 0.8) 55%,
+      #ffffff 100%
+    );
+    filter: drop-shadow(0 0 4px rgba(180, 239, 249, 0.85));
+    transform: rotate(61deg);
+    transform-origin: center;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .dark .meteor {
+    filter: drop-shadow(0 0 7px rgba(180, 239, 249, 0.95));
+  }
+  .meteor-1 {
+    top: 6%;
+    left: 6%;
+    animation: meteor-fall 9s linear 1.5s infinite;
+  }
+  .meteor-2 {
+    top: 2%;
+    left: 46%;
+    animation: meteor-fall 11s linear 6s infinite;
+  }
+  .meteor-3 {
+    top: 10%;
+    left: 70%;
+    animation: meteor-fall 14s linear 9.5s infinite;
+  }
+  @keyframes meteor-fall {
+    0% {
+      transform: translate3d(0, 0, 0) rotate(61deg);
+      opacity: 0;
+    }
+    5% {
+      opacity: 1;
+    }
+    18% {
+      opacity: 1;
+    }
+    26%,
+    100% {
+      transform: translate3d(300px, 540px, 0) rotate(61deg);
+      opacity: 0;
+    }
+  }
+
+  .screen-frame {
+    background: var(--c-paper);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow:
+      0 0 0 6px rgba(255, 255, 255, 0.14),
+      0 24px 60px -20px rgba(20, 16, 40, 0.45);
+  }
+  /* The hero mockup is a LIGHT dashboard render; until a dark-theme screenshot
+     exists, take the glare off it so it doesn't burn a hole in the night hero. */
+  .dark .screen-frame img {
+    filter: brightness(0.86) saturate(0.92) contrast(1.02);
+  }
+  .dark .screen-frame {
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      0 0 0 6px rgba(255, 255, 255, 0.06),
+      0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  }
+
+  /* ---- Scroll reveal ---- */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .media-zoom img {
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .media-zoom:hover img {
+    transform: scale(1.03);
+  }
+
+  /* ---- Glassmorphism ----
+     A translucent, blurred surface for panels that float over other content
+     (mega menu, side panels). Kept to a light touch — no drop shadow, just
+     blur + saturation + the same hairline border every other surface uses. */
+  .glass {
+    background: color-mix(in srgb, var(--c-paper) 72%, transparent);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid var(--c-line);
+  }
+  .glass-strong {
+    background: color-mix(in srgb, var(--c-paper) 60%, transparent);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid var(--c-line);
+  }
+
+  /* ---- Nav mega-menu surface ----
+     The hero sits behind the nav and is bright/saturated, so the generic
+     `.glass` (72% opaque) let hero text bleed straight through the menu and
+     killed contrast. Menus need to read as solid panels first, glass second:
+     much higher opacity, a real shadow to separate from whatever is behind
+     it, and a touch more blur to smooth any residual bleed-through. */
+  .glass-menu {
+    background: color-mix(in srgb, var(--c-paper) 97%, transparent);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid var(--c-line);
+    box-shadow:
+      0 24px 60px -16px rgba(20, 16, 40, 0.28),
+      0 2px 8px -2px rgba(20, 16, 40, 0.12);
+  }
+  .dark .glass-menu {
+    box-shadow:
+      0 24px 60px -16px rgba(0, 0, 0, 0.55),
+      0 2px 8px -2px rgba(0, 0, 0, 0.35);
+  }
+
+  /* ---- Card hover: a single, consistent lift used across every card grid
+     (services, industries, team, roles, case studies) so motion reads as one
+     design decision rather than a different animation per section. ---- */
+  .card-hover {
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.35s ease,
+      background-color 0.35s ease;
+  }
+  .card-hover:hover,
+  .card-hover:focus-within {
+    transform: translateY(-5px);
+    border-color: var(--c-line-strong);
+  }
+
+  /* Icon inside a .card-hover: a small pop + tilt, driven by the parent
+     hover so it never fires on its own. */
+  .icon-pop {
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .card-hover:hover .icon-pop,
+  .card-hover:focus-within .icon-pop {
+    transform: scale(1.12) rotate(-6deg);
+  }
+
+  /* ---- Flip card ----
+     Used for the small set of cards that trade an at-a-glance summary for a
+     detail on interaction (Industries, Products). Front/back share the same
+     glow-ring surface so the flip reads as one card turning over, not two
+     different components. Keyboard users get the same effect via
+     focus-within, since the trigger is the card itself, not a button. */
+  .flip-card {
+    perspective: 1400px;
+  }
+  .flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-style: preserve-3d;
+  }
+  .flip-card:hover .flip-card-inner,
+  .flip-card:focus-within .flip-card-inner {
+    transform: rotateY(180deg);
+  }
+  .flip-card-front,
+  .flip-card-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .flip-card-back {
+    transform: rotateY(180deg);
+  }
+
+  /* ---- Gradient-border card ----
+     Used for Industries. A slow-rotating conic gradient lives behind the
+     card and only shows through a 1px gap (the outer element's padding),
+     so hovering reads as the border itself lighting up rather than a
+     decoration bolted on top. A cursor-tracked spotlight underneath the
+     content adds depth without ever hiding the text. */
+  .gradient-border-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 23px;
+    padding: 1px;
+    height: 100%;
+  }
+  .gradient-border-card::before {
+    content: '';
+    position: absolute;
+    inset: -60%;
+    z-index: 0;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      color-mix(in srgb, var(--c-signal) 90%, transparent) 55deg,
+      #b487e0 130deg,
+      transparent 210deg,
+      transparent 360deg
+    );
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    animation: spin-slow 5s linear infinite;
+  }
+  .gradient-border-card:hover::before,
+  .gradient-border-card:focus-within::before {
+    opacity: 1;
+  }
+  .gradient-border-card-inner {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    border-radius: 22px;
+    height: 100%;
+  }
+  @keyframes spin-slow {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+  .spotlight-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    background: radial-gradient(
+      280px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--c-signal) 14%, transparent),
+      transparent 70%
+    );
+  }
+  .gradient-border-card:hover .spotlight-layer,
+  .gradient-border-card:focus-within .spotlight-layer {
+    opacity: 1;
+  }
+
+  /* ---- Shimmer-border card ----
+     Used for the Work "product collaborations" grid. A light diagonal
+     sweep crosses the card's accent block on hover, and the hairline
+     border lifts to the signal colour — a lighter-weight sibling of the
+     gradient-border treatment above, for a denser grid of smaller cards. */
+  .shimmer-card {
+    position: relative;
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.35s ease;
+  }
+  .shimmer-card:hover,
+  .shimmer-card:focus-within {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--c-signal) 45%, var(--c-line-strong));
+  }
+  .shimmer-sweep {
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(
+      75deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      transparent 100%
+    );
+    transform: skewX(-20deg);
+    transition: left 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .shimmer-card:hover .shimmer-sweep,
+  .shimmer-card:focus-within .shimmer-sweep {
+    left: 130%;
+  }
+
+  /* ---- Menu pop: the mega menu and other floating panels ease in rather
+     than snapping open. ---- */
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .menu-pop {
+    animation: menu-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: top center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flip-card {
+      height: auto !important;
+    }
+    .flip-card-inner {
+      position: static;
+      transition: none;
+      transform: none !important;
+    }
+    .flip-card-front,
+    .flip-card-back {
+      position: static;
+      transform: none;
+    }
+    .flip-card-back {
+      margin-top: 0.75rem;
+    }
+    .menu-pop {
+      animation: none;
+    }
+  }
+
+  /* ---- Proximity list (Process section) ----
+     --effect (0..1) is driven per row by a single rAF lerp in JS, so the
+     rule, the number and the text all ease together with no staggered
+     CSS transitions. */
+  .prox-row {
+    position: relative;
+    padding-left: 96px;
+    cursor: default;
+  }
+  .prox-rule {
+    position: absolute;
+    left: 0;
+    top: 22px;
+    height: 1px;
+    width: 72px;
+    transform-origin: left center;
+    transform: scaleX(calc(0.55 + var(--effect, 0) * 0.45));
+    background: color-mix(
+      in srgb,
+      var(--c-signal) calc(var(--effect, 0) * 100%),
+      var(--c-line-strong)
+    );
+  }
+  .prox-num {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1;
+    color: color-mix(in srgb, var(--c-signal) calc(var(--effect, 0) * 100%), var(--c-ink));
+    opacity: calc(0.3 + var(--effect, 0) * 0.7);
+    transform: translateX(calc(var(--effect, 0) * 10px));
+  }
+  .prox-body {
+    transform: translateX(calc(var(--effect, 0) * 10px));
+  }
+
+  /* ---- Testimonial carousel ---- */
+  .tcar-track {
+    display: flex;
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .tcar-track.is-dragging {
+    transition: none;
+  }
+  .tcar-dot {
+    height: 7px;
+    width: 7px;
+    border-radius: 9999px;
+    background: var(--c-line-strong);
+    transition:
+      width 0.3s ease,
+      background-color 0.3s ease;
+  }
+  .tcar-dot[data-active='true'] {
+    width: 22px;
+    background: var(--c-signal);
+  }
+}
